@@ -17,5 +17,25 @@
   "ai": {
     "binding": "AI"
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CHAT_HISTORY",
+        "class_name": "ChatHistory"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ChatHistory"]
+    }
+  ],
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "paper-embeddings"
+    }
+  ],
   "upload_source_maps": true
 }

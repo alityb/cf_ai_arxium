@@ -1,153 +1,138 @@
-# LLM Chat Application Template
+# arxium 📚
 
-A simple, ready-to-deploy chat application template powered by Cloudflare Workers AI. This template provides a clean starting point for building AI chat applications with streaming responses.
+a research paper answering engine focused on openly accessible ML papers. give it a query, get back ai-generated responses with citations from relevant papers.
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/llm-chat-app-template)
+## what's under the hood 🔧
 
-<!-- dash-content-start -->
+**data sources**
+- arxiv api for paper metadata and abstracts
 
-## Demo
+**tech stack**
+- **frontend**: react (via cdn), terminal-style ui with noise background
+- **backend**: cloudflare workers
+- **llm**: llama 3.3 70b via workers ai
+- **embeddings**: bge-base-en-v1.5 via workers ai
+- **vector store**: cloudflare vectorize
+- **memory/state**: durable objects for chat history
+- **hosting**: cloudflare pages/assets
 
-This template demonstrates how to build an AI-powered chat interface using Cloudflare Workers AI with streaming responses. It features:
+## cloudflare assignment requirements ✅
 
-- Real-time streaming of AI responses using Server-Sent Events (SSE)
-- Easy customization of models and system prompts
-- Support for AI Gateway integration
-- Clean, responsive UI that works on mobile and desktop
+this project fulfills all required components:
 
-## Features
+✅ **LLM**: llama 3.3 70b via workers ai  
+✅ **workflow/coordination**: cloudflare workers + durable objects  
+✅ **user input**: web interface via cloudflare pages/assets (react chat ui)  
+✅ **memory/state**: durable objects for persistent chat sessions  
 
-- 💬 Simple and responsive chat interface
-- ⚡ Server-Sent Events (SSE) for streaming responses
-- 🧠 Powered by Cloudflare Workers AI LLMs
-- 🛠️ Built with TypeScript and Cloudflare Workers
-- 📱 Mobile-friendly design
-- 🔄 Maintains chat history on the client
-- 🔎 Built-in Observability logging
-<!-- dash-content-end -->
+## running locally 🚀
 
-## Getting Started
+**prerequisites:**
+- node.js v18+
+- cloudflare account with workers ai, durable objects, and vectorize enabled
 
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (v18 or newer)
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
-- A Cloudflare account with Workers AI access
-
-### Installation
-
-1. Clone this repository:
-
-   ```bash
-   git clone https://github.com/cloudflare/templates.git
-   cd templates/llm-chat-app
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Generate Worker type definitions:
-   ```bash
-   npm run cf-typegen
-   ```
-
-### Development
-
-Start a local development server:
+**setup:**
 
 ```bash
+# clone the repo
+git clone <your-repo-url>
+cd cf-ai-arxium
+
+# install dependencies
+npm install
+
+# generate types
+npm run cf-typegen
+
+# create vectorize index
+npx wrangler vectorize create paper-embeddings --dimensions=768 --metric=cosine
+
+# login to cloudflare
+npx wrangler login
+
+# start dev server
 npm run dev
 ```
 
-This will start a local server at http://localhost:8787.
+visit `http://localhost:8787` and you're good to go! 🎉
 
-Note: Using Workers AI accesses your Cloudflare account even during local development, which will incur usage charges.
-
-### Deployment
-
-Deploy to Cloudflare Workers:
+**deploy:**
 
 ```bash
 npm run deploy
 ```
 
-### Monitor
-
-View real-time logs associated with any deployed Worker:
-
+visit your deployed url. optionally seed initial papers:
 ```bash
-npm wrangler tail
+curl -X POST https://cf-ai-arxium.[your-subdomain].workers.dev/api/setup
 ```
 
-## Project Structure
+## usage examples
+
+**general questions:**
+- "what is attention mechanism?"
+- "how does bert differ from gpt?"
+- "explain residual connections"
+
+**author queries:**
+- "geoffrey hinton"
+- "papers by yann lecun"
+- "yann lecun recent work"
+
+**response length control:**
+- choose short (2-3 sentences), medium (4-6 sentences), or long (comprehensive) responses via ui selector
+
+## api endpoints
+
+- `POST /api/query` - ask a question
+  - body: `{ query: string, session_id: string, response_length?: "short" | "medium" | "long" }`
+  - returns: `{ answer: string, citations: Citation[], session_id: string }`
+- `GET /api/history/:sessionId` - get chat history
+- `POST /api/clear/:sessionId` - clear history
+- `POST /api/setup` - seed initial papers (optional)
+
+## how it works
+
+1. user submits query with optional response length preference
+2. system searches arxiv api (detects author queries automatically)
+3. generates embeddings and searches vectorize for additional context
+4. llama 3.3 generates answer with citations (length adjusted based on preference)
+5. conversation saved to durable object for persistence
+6. citations displayed as interactive cards with hover effects
+
+## project structure
 
 ```
-/
-├── public/             # Static assets
-│   ├── index.html      # Chat UI HTML
-│   └── chat.js         # Chat UI frontend script
+cf-ai-arxium/
+├── public/          # frontend (react via cdn)
+│   ├── index.html   # main html
+│   ├── app.jsx      # react components
+│   └── style.css    # styling
 ├── src/
-│   ├── index.ts        # Main Worker entry point
-│   └── types.ts        # TypeScript type definitions
-├── test/               # Test files
-├── wrangler.jsonc      # Cloudflare Worker configuration
-├── tsconfig.json       # TypeScript configuration
-└── README.md           # This documentation
+│   ├── index.ts     # main worker
+│   ├── chat-history.ts  # durable object
+│   ├── arxiv.ts     # arxiv api integration
+│   └── types.ts     # typescript types
+└── wrangler.jsonc   # cloudflare config
 ```
 
-## How It Works
+## features
 
-### Backend
+- ✅ real-time arxiv integration
+- ✅ author search (e.g., "geoffrey hinton" or "papers by yann lecun")
+- ✅ persistent chat sessions via durable objects
+- ✅ citation tracking with clickable links
+- ✅ response length control (short/medium/long)
+- ✅ terminal-style ui with noise background
+- ✅ keyboard shortcuts (ctrl+l / cmd+l to clear history)
 
-The backend is built with Cloudflare Workers and uses the Workers AI platform to generate responses. The main components are:
+## ai-assisted development
 
-1. **API Endpoint** (`/api/chat`): Accepts POST requests with chat messages and streams responses
-2. **Streaming**: Uses Server-Sent Events (SSE) for real-time streaming of AI responses
-3. **Workers AI Binding**: Connects to Cloudflare's AI service via the Workers AI binding
+all prompts used during development are documented in [PROMPTS.md](./PROMPTS.md).
 
-### Frontend
+## resources
 
-The frontend is a simple HTML/CSS/JavaScript application that:
-
-1. Presents a chat interface
-2. Sends user messages to the API
-3. Processes streaming responses in real-time
-4. Maintains chat history on the client side
-
-## Customization
-
-### Changing the Model
-
-To use a different AI model, update the `MODEL_ID` constant in `src/index.ts`. You can find available models in the [Cloudflare Workers AI documentation](https://developers.cloudflare.com/workers-ai/models/).
-
-### Using AI Gateway
-
-The template includes commented code for AI Gateway integration, which provides additional capabilities like rate limiting, caching, and analytics.
-
-To enable AI Gateway:
-
-1. [Create an AI Gateway](https://dash.cloudflare.com/?to=/:account/ai/ai-gateway) in your Cloudflare dashboard
-2. Uncomment the gateway configuration in `src/index.ts`
-3. Replace `YOUR_GATEWAY_ID` with your actual AI Gateway ID
-4. Configure other gateway options as needed:
-   - `skipCache`: Set to `true` to bypass gateway caching
-   - `cacheTtl`: Set the cache time-to-live in seconds
-
-Learn more about [AI Gateway](https://developers.cloudflare.com/ai-gateway/).
-
-### Modifying the System Prompt
-
-The default system prompt can be changed by updating the `SYSTEM_PROMPT` constant in `src/index.ts`.
-
-### Styling
-
-The UI styling is contained in the `<style>` section of `public/index.html`. You can modify the CSS variables at the top to quickly change the color scheme.
-
-## Resources
-
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Cloudflare Workers AI Documentation](https://developers.cloudflare.com/workers-ai/)
-- [Workers AI Models](https://developers.cloudflare.com/workers-ai/models/)
+- [cloudflare workers ai](https://developers.cloudflare.com/workers-ai/)
+- [durable objects](https://developers.cloudflare.com/durable-objects/)
+- [vectorize](https://developers.cloudflare.com/vectorize/)
+- [arxiv api](https://arxiv.org/help/api)
